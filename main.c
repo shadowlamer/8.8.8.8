@@ -38,10 +38,19 @@ __sfr __at 0xfe joystick_keys_port;
 static const unsigned char wall_attributes[NUM_WALL_COLORS] = {
  0b00000001,
  0b01000001,
- 0b00001001,
- 0b01001001,
- 0b00001111,
- 0b01001111
+ 0b00000100,
+ 0b01000100,
+ 0b00000110,
+ 0b01000110
+};
+
+static const unsigned char *wall_sprites[NUM_WALL_COLORS] = {
+ wall_corn1,
+ wall_corn2,
+ wall_corn3,
+ wall_corn4,
+ wall_corn5,
+ wall_corn6
 };
 
 static unsigned int player_angle = 0;
@@ -101,20 +110,20 @@ void copy_pix_buf() {
 void draw_wall_sprite(char *p_sprite,
                       unsigned char x, 
                       unsigned char height) {
-  static char pattern = 0b01010101;
+//  static char pattern = 0b01010101;
   unsigned char y = (PIX_BUFFER_HEIGHT / 2) - height;  
   char *p_buf = pix_buffer + ((SCR_WIDTH * y) + x);
+  unsigned char wall_color_index = height / 8;
+  if (wall_color_index > NUM_WALL_COLORS - 1) wall_color_index = NUM_WALL_COLORS - 1;
   
-  (void) p_sprite;
+  p_sprite = (char *)(wall_sprites[wall_color_index]);
   for (unsigned char i = 0; i < (height * 2); i++) {
-    *p_buf = pattern;
+    *p_buf = *p_sprite++;
     p_buf += SCR_WIDTH;
-    pattern = ~pattern;
+//    pattern = ~pattern;
   }
   p_buf = pix_attr_buffer + ((SCR_WIDTH * (y / 8)) + x);
   for (unsigned char i = 0; i < (height  / 4); i++) {
-    unsigned char wall_color_index = height / 8;
-    if (wall_color_index > NUM_WALL_COLORS - 1) wall_color_index = NUM_WALL_COLORS - 1;
     *p_buf = wall_attributes[wall_color_index];
     p_buf += SCR_WIDTH;
   }
