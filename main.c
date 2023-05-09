@@ -10,10 +10,14 @@
 #define PIX_BUFFER_HEIGHT 128
 #define PIX_BUFFER_SIZE (PIX_BUFFER_HEIGHT * SCR_WIDTH)
 #define PIX_BUFFER_START (0xf000 - PIX_BUFFER_SIZE)
+#define PIX_ATTR_BUFFER_HEIGHT (PIX_BUFFER_HEIGHT / 8)
+#define PIX_ATTR_BUFFER_SIZE (SCR_WIDTH * PIX_ATTR_BUFFER_HEIGHT)
+#define PIX_ATTR_BUFFER_START (PIX_BUFFER_START - (PIX_ATTR_BUFFER_SIZE))
 
 #define MAX_DISTANCE 16
 #define WALL_HEIGHT_COEFF (PIX_BUFFER_HEIGHT / 2 / MAX_DISTANCE)
 
+#define NUM_WALL_COLORS 6
 
 /// Sinclair joystick key masks
 typedef enum {
@@ -25,9 +29,20 @@ typedef enum {
 } key_t;
 
 __at (SCREEN_BUFFER_START) char screen_buf[0x1800];
+__at (ATTR_SCREEN_BUFFER_START) char attr_buf[0x300];
 __at (PIX_BUFFER_START) char pix_buffer[PIX_BUFFER_SIZE];
+__at (PIX_ATTR_BUFFER_START) char pix_attr_buffer[PIX_ATTR_BUFFER_SIZE];
 
 __sfr __at 0xfe joystick_keys_port;
+
+static const unsigned char wall_attributes[NUM_WALL_COLORS] = {
+ 0b00000001,
+ 0b01000001,
+ 0b00001001,
+ 0b01001001,
+ 0b00001111,
+ 0b01001111
+};
 
 static unsigned int player_angle = 0;
 static int player_x = 10 * 256;
@@ -47,8 +62,8 @@ int main() {
   while(1) {
     key = joystick_keys_port & 0x1f ^ 0x1f;
     
-    if (key == KEY_LEFT)  player_angle -= 4;
-    if (key == KEY_RIGHT) player_angle += 4;
+    if (key == KEY_LEFT)  player_angle -= 8;
+    if (key == KEY_RIGHT) player_angle += 8;
     if (key == KEY_UP)    {
       player_x += COS(player_angle);
       player_y += SIN(player_angle);
@@ -71,22 +86,36 @@ int main() {
 
 void copy_pix_buf() {
   char *p_buf = pix_buffer;
+
+  memcpy(attr_buf, pix_attr_buffer, PIX_ATTR_BUFFER_SIZE);
+  memset(pix_attr_buffer, 0x04, PIX_ATTR_BUFFER_SIZE);
+
   for (unsigned char i = 0; i < PIX_BUFFER_HEIGHT; i++) {
     memcpy(screen_line_addrs[i], p_buf, SCR_WIDTH);
     p_buf += SCR_WIDTH;
   }
-  memset(pix_buffer, 0x00, PIX_BUFFER_SIZE);
+  memset(pix_buffer, 0x00, PIX_BUFFER_SIZE / 2);
+  memset(pix_buffer + PIX_BUFFER_SIZE / 2, 0xff, PIX_BUFFER_SIZE / 2);
 }
 
 void draw_wall_sprite(char *p_sprite,
                       unsigned char x, 
                       unsigned char height) {
+  static char pattern = 0b01010101;
   unsigned char y = (PIX_BUFFER_HEIGHT / 2) - height;  
   char *p_buf = pix_buffer + ((SCR_WIDTH * y) + x);
   
   (void) p_sprite;
   for (unsigned char i = 0; i < (height * 2); i++) {
-    *p_buf = 0xff;
+    *p_buf = pattern;
+    p_buf += SCR_WIDTH;
+    pattern = ~pattern;
+  }
+  p_buf = pix_attr_buffer + ((SCR_WIDTH * (y / 8)) + x);
+  for (unsigned char i = 0; i < (height  / 4); i++) {
+    unsigned char wall_color_index = height / 8;
+    if (wall_color_index > NUM_WALL_COLORS - 1) wall_color_index = NUM_WALL_COLORS - 1;
+    *p_buf = wall_attributes[wall_color_index];
     p_buf += SCR_WIDTH;
   }
 }
