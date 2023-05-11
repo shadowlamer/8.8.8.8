@@ -14,7 +14,7 @@
 #define PIX_ATTR_BUFFER_SIZE (SCR_WIDTH * PIX_ATTR_BUFFER_HEIGHT)
 #define PIX_ATTR_BUFFER_START (PIX_BUFFER_START - (PIX_ATTR_BUFFER_SIZE))
 
-#define MAX_DISTANCE 16
+#define MAX_DISTANCE 32
 #define WALL_HEIGHT_COEFF (PIX_BUFFER_HEIGHT / 2 / MAX_DISTANCE)
 
 #define NUM_WALL_COLORS 6
@@ -35,35 +35,51 @@ __at (PIX_ATTR_BUFFER_START) char pix_attr_buffer[PIX_ATTR_BUFFER_SIZE];
 
 __sfr __at 0xfe joystick_keys_port;
 
-static const unsigned char wall_attributes[NUM_WALL_COLORS] = {
- 0b00000001,
- 0b01000001,
- 0b00000100,
- 0b01000100,
- 0b00000110,
- 0b01000110
-};
-
-static const unsigned char *wall_sprites[NUM_WALL_COLORS] = {
- wall_corn1,
- wall_corn2,
- wall_corn3,
- wall_corn4,
- wall_corn5,
- wall_corn6
-};
-
 static unsigned int player_angle = 0;
-static int player_x = 10 * 256;
-static int player_y = 10 * 256;
+static int player_x = 2 * 256;
+static int player_y = 2 * 256;
 static unsigned char key;
+
+const static int distance_deltas[MAX_DISTANCE] = {
+549,
+538,
+526,
+515,
+504,
+493,
+483,
+473,
+464,
+455,
+446,
+437,
+428,
+420,
+412,
+404,
+397,
+389,
+382,
+375,
+369,
+362,
+356,
+349,
+343,
+337,
+332,
+326,
+320,
+315,
+310,
+10000
+};
 
 
 void copy_pix_buf();
-void draw_wall_sprite(char *p_sprite,
-  		      unsigned char x, 
+void draw_wall_sprite(unsigned char x, 
                       unsigned char height);
-unsigned char trace_ray(unsigned int angle);
+unsigned char trace_ray(int angle);
 char get_map_at(unsigned int x, unsigned int y);
 void pixel(unsigned char x, unsigned char y);
 
@@ -85,7 +101,7 @@ int main() {
     player_angle = player_angle & 0x00ff;
     
     for (unsigned char col = 0; col < SCR_WIDTH; col++) {
-      draw_wall_sprite(NULL, col, trace_ray(col));
+      draw_wall_sprite(col, trace_ray(col));
 //      trace_ray(col);
     }
     copy_pix_buf();
@@ -96,9 +112,6 @@ int main() {
 void copy_pix_buf() {
   char *p_buf = pix_buffer;
 
-  memcpy(attr_buf, pix_attr_buffer, PIX_ATTR_BUFFER_SIZE);
-  memset(pix_attr_buffer, 0x04, PIX_ATTR_BUFFER_SIZE);
-
   for (unsigned char i = 0; i < PIX_BUFFER_HEIGHT; i++) {
     memcpy(screen_line_addrs[i], p_buf, SCR_WIDTH);
     p_buf += SCR_WIDTH;
@@ -107,44 +120,42 @@ void copy_pix_buf() {
   memset(pix_buffer + PIX_BUFFER_SIZE / 2, 0xff, PIX_BUFFER_SIZE / 2);
 }
 
-void draw_wall_sprite(char *p_sprite,
-                      unsigned char x, 
+void draw_wall_sprite(unsigned char x, 
                       unsigned char height) {
-//  static char pattern = 0b01010101;
+  char pattern = 0b01010101;
   unsigned char y = (PIX_BUFFER_HEIGHT / 2) - height;  
   char *p_buf = pix_buffer + ((SCR_WIDTH * y) + x);
-  unsigned char wall_color_index = height / 8;
-  if (wall_color_index > NUM_WALL_COLORS - 1) wall_color_index = NUM_WALL_COLORS - 1;
   
-  p_sprite = (char *)(wall_sprites[wall_color_index]);
+  if (y % 2) pattern = ~pattern;
+  
   for (unsigned char i = 0; i < (height * 2); i++) {
-    *p_buf = *p_sprite++;
+    *p_buf = pattern;
     p_buf += SCR_WIDTH;
-//    pattern = ~pattern;
-  }
-  p_buf = pix_attr_buffer + ((SCR_WIDTH * (y / 8)) + x);
-  for (unsigned char i = 0; i < (height  / 4); i++) {
-    *p_buf = wall_attributes[wall_color_index];
-    p_buf += SCR_WIDTH;
+    pattern = ~pattern;
   }
 }
 
-unsigned char trace_ray(unsigned int angle) {
-    unsigned char eff_angle = (angle + player_angle - (SCR_WIDTH / 2)) & 0xff;
-    unsigned int ray = MAX_DISTANCE;
+unsigned char trace_ray(int angle) {
+    int eff_angle = (angle + player_angle - (SCR_WIDTH / 2)) & 0xff;
+    int ray = ((200 - SIN(angle + 48)) * 200) ;
     int sin = SIN(eff_angle);
     int cos = COS(eff_angle);
     int x = player_x;
     int y = player_y;
 
-  (void) angle;
+    const int *p_delta = distance_deltas;
   
-  while (get_map_at(x, y) == 0 && ray > 0 && x > 0 && y > 0) {
+//  pixel(angle, 64 + (COS(angle - 16) / 2));
+  
+  for (unsigned char d = 0; d < MAX_DISTANCE && get_map_at(x, y) == 0; d++) {
+        if (ray < *p_delta) return 0;
+        ray -= *p_delta;
         x += cos;
         y += sin;
-        ray--;
+        p_delta++;
     }
-    return ray * WALL_HEIGHT_COEFF;
+    ray = ray >> 8;
+    return ray;
 }
 
 char get_map_at(unsigned int x, unsigned int y){
