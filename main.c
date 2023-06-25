@@ -15,7 +15,7 @@
 #define PIX_ATTR_BUFFER_START (PIX_BUFFER_START - (PIX_ATTR_BUFFER_SIZE))
 
 #define MAX_DISTANCE 32
-#define WALL_HEIGHT_COEFF (PIX_BUFFER_HEIGHT / 2 / MAX_DISTANCE)
+#define INIT_WALL_HEIGHT (100 << 8)
 
 #define NUM_WALL_COLORS 6
 
@@ -40,41 +40,7 @@ static int player_x = 2 * 256;
 static int player_y = 2 * 256;
 static unsigned char key;
 
-const static int distance_deltas[MAX_DISTANCE] = {
-549,
-538,
-526,
-515,
-504,
-493,
-483,
-473,
-464,
-455,
-446,
-437,
-428,
-420,
-412,
-404,
-397,
-389,
-382,
-375,
-369,
-362,
-356,
-349,
-343,
-337,
-332,
-326,
-320,
-315,
-310,
-10000
-};
-
+static int distance_deltas[MAX_DISTANCE];
 
 void copy_pix_buf();
 void draw_wall_sprite(unsigned char x, 
@@ -82,8 +48,10 @@ void draw_wall_sprite(unsigned char x,
 unsigned char trace_ray(int angle);
 char get_map_at(unsigned int x, unsigned int y);
 void pixel(unsigned char x, unsigned char y);
+void calc_distance_deltas();
 
 int main() {
+  calc_distance_deltas();
   while(1) {
     key = joystick_keys_port & 0x1f ^ 0x1f;
     
@@ -137,7 +105,7 @@ void draw_wall_sprite(unsigned char x,
 
 unsigned char trace_ray(int angle) {
     int eff_angle = (angle + player_angle - (SCR_WIDTH / 2)) & 0xff;
-    int ray = ((200 - SIN(angle + 48)) * 200) ;
+    int ray = INIT_WALL_HEIGHT ;
     int sin = SIN(eff_angle);
     int cos = COS(eff_angle);
     int x = player_x;
@@ -170,3 +138,13 @@ void pixel(unsigned char x, unsigned char y) {
   pix_buffer[y * SCR_WIDTH + coarse_x] |= 0x80 >> fine_x;
 }
 
+void calc_distance_deltas() {
+  unsigned int old_height = INIT_WALL_HEIGHT; 
+  for (unsigned int i = 1; i < MAX_DISTANCE - 1; i++) {
+    unsigned int calculated_height = INIT_WALL_HEIGHT / i;
+    distance_deltas[i] = old_height - calculated_height;
+    old_height = calculated_height;
+  }
+  distance_deltas[0] = 0;
+  distance_deltas[MAX_DISTANCE - 1] = 10000;
+}
