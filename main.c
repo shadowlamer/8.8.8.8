@@ -52,6 +52,8 @@ void pixel(unsigned char x, unsigned char y);
 void calc_distance_deltas();
 
 int main() {
+  static int px;
+  static int py;
   calc_distance_deltas();
   while(1) {
     key = joystick_keys_port & 0x1f ^ 0x1f;
@@ -59,12 +61,16 @@ int main() {
     if (key == KEY_LEFT)  player_angle -= 8;
     if (key == KEY_RIGHT) player_angle += 8;
     if (key == KEY_UP)    {
-      player_x += COS(player_angle);
-      player_y += SIN(player_angle);
+      px = player_x + COS(player_angle);
+      py = player_y + SIN(player_angle);
     }
     if (key == KEY_DOWN)    {
-      player_x -= COS(player_angle);
-      player_y -= SIN(player_angle);
+      px = player_x - COS(player_angle);
+      py = player_y - SIN(player_angle);
+    }
+    if (get_map_at(px, py) == 0) {
+    	player_x = px;
+        player_y = py;
     }
     
     player_angle = player_angle & 0x00ff;
