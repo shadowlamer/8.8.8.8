@@ -42,9 +42,12 @@ static int player_y = 2 * 256;
 static unsigned char key;
 
 static int distance_deltas[MAX_DISTANCE];
+static unsigned char wall_height_buffer[SCR_WIDTH];
 
 void copy_pix_buf();
 void draw_wall_sprite(unsigned char x, 
+                      unsigned char height);
+void fill_wall_sprite(unsigned char x, 
                       unsigned char height);
 unsigned char trace_ray(int angle);
 char get_map_at(unsigned int x, unsigned int y);
@@ -54,7 +57,15 @@ void calc_distance_deltas();
 int main() {
   static int px;
   static int py;
+
+  unsigned char wall_chunk_start;
+  unsigned char wall_chunk_height;
+  unsigned char wall_chunk_size;
+  unsigned char wall_height_delta;
+
+  
   calc_distance_deltas();
+
   while(1) {
     key = joystick_keys_port & 0x1f ^ 0x1f;
     
@@ -76,8 +87,43 @@ int main() {
     player_angle = player_angle & 0x00ff;
     
     for (unsigned char col = 0; col < SCR_WIDTH; col++) {
-      draw_wall_sprite(col, trace_ray(col));
-//      trace_ray(col);
+      wall_height_buffer[col] = trace_ray(col);
+    }
+    
+// smooth wall edges
+    wall_chunk_start = 0;
+    wall_chunk_height = wall_height_buffer[wall_chunk_start];
+    for (unsigned char col = 0; col < SCR_WIDTH; col++) {
+      if (wall_height_buffer[col] ==0 || wall_height_buffer[col] > wall_chunk_height) break;
+      if (wall_height_buffer[col] < wall_chunk_height) {
+        wall_chunk_size = col - wall_chunk_start;
+        wall_height_delta = (wall_chunk_height - wall_height_buffer[col]) / (wall_chunk_size);
+      	for (unsigned char i = 0; i < wall_chunk_size; i++) {
+          wall_height_buffer[wall_chunk_start + i] = wall_chunk_height - wall_height_delta * i;
+        }
+	wall_chunk_start = col;
+    	wall_chunk_height = wall_height_buffer[col];
+      }
+    }
+
+    wall_chunk_start = SCR_WIDTH - 1;
+    wall_chunk_height = wall_height_buffer[wall_chunk_start];
+    for (unsigned char col = SCR_WIDTH - 1; col > 0; col--) {
+      if (wall_height_buffer[col] ==0 || wall_height_buffer[col] > wall_chunk_height) break;
+      if (wall_height_buffer[col] < wall_chunk_height) {
+        wall_chunk_size = wall_chunk_start - col;
+        wall_height_delta = (wall_chunk_height - wall_height_buffer[col]) / (wall_chunk_size);
+      	for (unsigned char i = 0; i < wall_chunk_size; i++) {
+          wall_height_buffer[wall_chunk_start - i] = wall_chunk_height - wall_height_delta * i;
+        }
+	wall_chunk_start = col;
+    	wall_chunk_height = wall_height_buffer[col];
+      }
+    }
+    
+    
+    for (unsigned char col = 0; col < SCR_WIDTH; col++) {
+      draw_wall_sprite(col, wall_height_buffer[col]);
     }
     copy_pix_buf();
   }
@@ -119,6 +165,22 @@ void draw_wall_sprite(unsigned char x,
     p_sprite++;
   }
 }
+
+void fill_wall_sprite(unsigned char x, 
+                      unsigned char height) {
+  char pattern = 0b01010101;
+  unsigned char y = (PIX_BUFFER_HEIGHT / 2) - height;  
+  char *p_buf = pix_buffer + ((SCR_WIDTH * y) + x);
+  
+  if (y % 2) pattern = ~pattern;
+  
+  for (unsigned char i = 0; i < (height * 2); i++) {
+    *p_buf = pattern;
+    p_buf += SCR_WIDTH;
+    pattern = ~pattern;
+  }
+}
+
 
 unsigned char trace_ray(int angle) {
     int eff_angle = (angle + player_angle - (SCR_WIDTH / 2)) & 0xff;
