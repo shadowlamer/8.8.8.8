@@ -143,10 +143,10 @@ void copy_pix_buf() {
 
 void draw_wall_sprite(unsigned char x, 
                       unsigned char height) {
-  unsigned char y = (PIX_BUFFER_HEIGHT / 2) - height;  
-  char *p_buf = pix_buffer + ((SCR_WIDTH * y) + x);
+  unsigned char y;  
+  char *p_buf;
   char const *p_sprite;
-  
+
   if (height <= 4) {
     p_sprite = corn_0;
   } else if (height <= 8) {
@@ -155,10 +155,16 @@ void draw_wall_sprite(unsigned char x,
     p_sprite = corn_2;
   } else if (height <= 32) {
     p_sprite = corn_3;
-  } else {
+  } else if (height < MAX_PROJECTION_HEIGHT) {
     p_sprite = corn_4;
+  } else {
+    height = MAX_PROJECTION_HEIGHT - 1;
+    p_sprite = corn_5;
   }
-  
+
+  y = (PIX_BUFFER_HEIGHT / 2) - height;  
+  p_buf = pix_buffer + ((SCR_WIDTH * y) + x);
+
   for (unsigned char i = 0; i < (height * 2); i++) {
     *p_buf = *p_sprite;
     p_buf += SCR_WIDTH;
@@ -200,7 +206,6 @@ unsigned char trace_ray(int angle) {
         p_delta++;
     }
     ray = ray >> 8;
-    if (ray > MAX_PROJECTION_HEIGHT) return MAX_PROJECTION_HEIGHT;
     return ray;
 }
 
