@@ -18,7 +18,7 @@
 #define PIX_ATTR_BUFFER_SIZE (SCR_WIDTH * PIX_ATTR_BUFFER_HEIGHT)  // Размер буфера атрибутов
 #define PIX_ATTR_BUFFER_START (PIX_BUFFER_START - PIX_ATTR_BUFFER_SIZE)  // Расположение атрибутов перед пиксельным буфером
 
-#define MAX_DISTANCE 32                // Максимальная дистанция прорисовки (в шагах луча)
+#define MAX_DISTANCE 16                // Максимальная дистанция прорисовки (в шагах луча)
 #define INIT_WALL_HEIGHT (127 << 8)    // Начальная высота стены в фиксированной точке (8.8): 127 * 256
 #define MAX_PROJECTION_HEIGHT (PIX_BUFFER_HEIGHT / 2)  // Макс. высота проекции на экран = 64 пикселя
 
@@ -47,8 +47,8 @@ __sfr __at 0xfe joystick_keys_port;
 
 // === ГЛОБАЛЬНОЕ СОСТОЯНИЕ ИГРОКА ===
 static unsigned int player_angle = 0;     // Угол взгляда (0–255 = полный круг)
-static int player_x = 2 * 256;            // Позиция игрока в фиксированной точке (8.8): 2.0
-static int player_y = 2 * 256;
+static int player_x = 1 * 256;            // Позиция игрока в фиксированной точке (8.8): 2.0
+static int player_y = 1 * 256;
 static unsigned char key;                 // Текущее нажатие клавиш
 
 // === ВСПОМОГАТЕЛЬНЫЕ МАССИВЫ ===
@@ -79,9 +79,11 @@ int main() {
   calc_distance_deltas();
 
   // Очистка буфера: верх — чёрный (0x00), низ — белый (0xFF) → имитация пола и потолка
+  memset(attr_buf, 0x04, ATTR_SCREEN_BUFFER_SIZE);               // Верх: 0–63 строки
+  
   memset(pix_buffer, 0x00, PIX_BUFFER_SIZE / 2);               // Верх: 0–63 строки
   memset(pix_buffer + PIX_BUFFER_SIZE / 2, 0xff, PIX_BUFFER_SIZE / 2); // Низ: 64–127 строки
-  
+
   
   // Основной игровой цикл
   while(1) {
