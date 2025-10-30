@@ -1,9 +1,5 @@
 #include <string.h>
 #include "engine.h"
-#include "sincos.h"
-#include "scr_addr.h"
-#include "wall_sprites.h"
-#include "map.h"
 
 // Экранная память ZX Spectrum: пиксели и атрибуты
 __at (SCREEN_BUFFER_START) char screen_buf[0x1800];        // 6144 байт пикселей

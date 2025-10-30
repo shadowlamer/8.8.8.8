@@ -1,6 +1,11 @@
 #ifndef __ENGINE_H
 #define __ENGINE_H
 
+#include "sincos.h"
+#include "scr_addr.h"
+#include "wall_sprites.h"
+#include "map.h"
+
 // === ПАРАМЕТРЫ РЕНДЕРА ===
 #define PIX_BUFFER_HEIGHT 128                     // Высота буфера пикселей (половина экрана вверх/вниз)
 #define PIX_BUFFER_SIZE (PIX_BUFFER_HEIGHT * SCR_WIDTH)  // Общий размер буфера (128 * 32 = 4096 байт)

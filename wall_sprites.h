@@ -1,4 +1,5 @@
-//
+#ifndef __SPRITES_H
+#define __SPRITES_H
 
 const static char corn_0[] =
 {/*{w:8,h:8,bpp:1,brev:1}*/
@@ -51,5 +52,5 @@ const static char corn_4[] =
   0x1E,0x1C,0x18,0x18,0x18,0x18,0x18,0x18,
   };
 
-
+#endif
 
