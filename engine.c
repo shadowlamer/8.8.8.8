@@ -105,24 +105,33 @@ void copy_pix_buf() {
 void draw_wall_sprite(unsigned char x, unsigned char height, unsigned char old_height) {
   unsigned char y, old_y;
   char *p_buf;
-  char const *p_sprite;
-
+  unsigned char width;
+  const t_sprite *p_sprite_descriptor;
+  const char *p_sprite_data;
+  
   // Выбор текстуры в зависимости от высоты стены
   if (height <= 4) {
-    p_sprite = corn_0;  // 8 пикселей
+    p_sprite_descriptor = &sp_corn_mature_0;  // 8 пикселей
   } else if (height <= 8) {
-    p_sprite = corn_1;  // 16
+    p_sprite_descriptor = &sp_corn_mature_1;  // 16
   } else if (height <= 16) {
-    p_sprite = corn_2;  // 32Local (1)
+    p_sprite_descriptor = &sp_corn_mature_2;  // 32Local (1)
   } else if (height <= 32) {
-    p_sprite = corn_3;  // 64
+    p_sprite_descriptor = &sp_corn_mature_3;  // 64
   } else {
-    p_sprite = corn_4;  // Полная 128-пиксельная текстура
+    p_sprite_descriptor = &sp_corn_mature_4;  // Полная 128-пиксельная текстура
   }
 
+  width = p_sprite_descriptor->width;
+  
+  p_sprite_data = p_sprite_descriptor->p_sprite;
+  p_sprite_data += x % p_sprite_descriptor->width;
+
+  
   // Вертикальная позиция: центрирование относительно середины буфера (64)
   y = (PIX_BUFFER_HEIGHT / 2) - height;
   old_y = (PIX_BUFFER_HEIGHT / 2) - old_height;
+
   
   if (y > old_y) {
     p_buf = pix_buffer + ((SCR_WIDTH * old_y) + x);
@@ -133,22 +142,18 @@ void draw_wall_sprite(unsigned char x, unsigned char height, unsigned char old_h
   } else {
     p_buf = pix_buffer + ((SCR_WIDTH * y) + x);
   }
-    
-  // Запись текстуры: каждый байт — одна строка (8 пикселей в ширину, но используется 1 пиксель = 1 бит)
-  // Цикл: height * 2 — потому что текстуры хранятся как 128-байтные массивы даже для меньших высот
   for (unsigned char i = 0; i < (height * 2); i++) {
-    *p_buf = *p_sprite;
+    *p_buf = *p_sprite_data;
     p_buf += SCR_WIDTH;   // Переход на следующую строку (внутри столбца)
-    p_sprite++;
+    p_sprite_data += width;
   }
-  
+
   if (y > old_y) {
     for (unsigned char i = 0; i < (y - old_y); i++) {
       *p_buf = 0xff;
       p_buf += SCR_WIDTH;   // Переход на следующую строку (внутри столбца)
     }
   }
-
 }
 
 // === ПРОБРОС ЛУЧА ===
