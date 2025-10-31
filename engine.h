@@ -13,7 +13,7 @@
 
 #define PIX_ATTR_BUFFER_HEIGHT (PIX_BUFFER_HEIGHT / 8)   // Атрибуты: 1 атрибут = 8 строк
 #define PIX_ATTR_BUFFER_SIZE (SCR_WIDTH * PIX_ATTR_BUFFER_HEIGHT)  // Размер буфера атрибутов
-#define PIX_ATTR_BUFFER_START (PIX_BUFFER_START - PIX_ATTR_BUFFER_SIZE)  // Расположение атрибутов перед пиксельным буфером
+#define PIX_ATTR_BUFFER_START ATTR_SCREEN_BUFFER_START
 
 #define MAX_DISTANCE 32                // Максимальная дистанция прорисовки (в шагах луча)
 #define INIT_WALL_HEIGHT (127 << 8)    // Начальная высота стены в фиксированной точке (8.8): 127 * 256

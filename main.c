@@ -47,6 +47,7 @@ int main() {
   static int px, py; // Временные координаты для проверки коллизий
 
   engine_init();
+  engine_render(player_x, player_y, player_angle);
   
   // Основной игровой цикл
   while(1) {
@@ -76,8 +77,9 @@ int main() {
     // Нормализация угла в диапазон [0, 255]
     player_angle = player_angle & 0x00ff;
 
-    engine_render(player_x, player_y, player_angle);
-    
+    if (key != 0x00) {
+      engine_render(player_x, player_y, player_angle);
+    }
   }
   return 0;
 }

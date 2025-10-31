@@ -20,8 +20,6 @@ void engine_init() {
   calc_distance_deltas();
 
   // Очистка буфера: верх — чёрный (0x00), низ — белый (0xFF) → имитация пола и потолка
-  memset(attr_buf, 0x04, ATTR_SCREEN_BUFFER_SIZE);               // Верх: 0–63 строки
-  
   memset(pix_buffer, 0x00, PIX_BUFFER_SIZE / 2);               // Верх: 0–63 строки
   memset(pix_buffer + PIX_BUFFER_SIZE / 2, 0xff, PIX_BUFFER_SIZE / 2); // Низ: 64–127 строки
 }
@@ -35,6 +33,7 @@ void engine_render(int player_x, int player_y, int player_angle) {
   unsigned char wall_chunk_size;
   unsigned char wall_height_delta;
 
+  memset(attr_buf, 0x04, ATTR_SCREEN_BUFFER_SIZE);               // Верх: 0–63 строки
   
   for (unsigned char col = 0; col < SCR_WIDTH; col++) {
       wall_height_buffer[col] = trace_ray(col, player_x, player_y, player_angle);
@@ -105,9 +104,11 @@ void copy_pix_buf() {
 void draw_wall_sprite(unsigned char x, unsigned char height, unsigned char old_height) {
   unsigned char y, old_y;
   char *p_buf;
+  char *p_attr_buf;
   unsigned char width;
   const t_sprite *p_sprite_descriptor;
   const char *p_sprite_data;
+  const char *p_attr_data;
   
   // Выбор текстуры в зависимости от высоты стены
   if (height <= 4) {
@@ -127,6 +128,9 @@ void draw_wall_sprite(unsigned char x, unsigned char height, unsigned char old_h
   p_sprite_data = p_sprite_descriptor->p_sprite;
   p_sprite_data += x % p_sprite_descriptor->width;
 
+  p_attr_data = p_sprite_descriptor->p_attributes;
+  p_attr_data += x % p_sprite_descriptor->width;
+
   
   // Вертикальная позиция: центрирование относительно середины буфера (64)
   y = (PIX_BUFFER_HEIGHT / 2) - height;
@@ -135,17 +139,24 @@ void draw_wall_sprite(unsigned char x, unsigned char height, unsigned char old_h
   
   if (y > old_y) {
     p_buf = pix_buffer + ((SCR_WIDTH * old_y) + x);
+    p_attr_buf = pix_attr_buffer + ((SCR_WIDTH * (old_y / 8)) + x);
     for (unsigned char i = 0; i < (y - old_y); i++) {
       *p_buf = 0x00;
       p_buf += SCR_WIDTH;   // Переход на следующую строку (внутри столбца)
     }
   } else {
     p_buf = pix_buffer + ((SCR_WIDTH * y) + x);
+    p_attr_buf = pix_attr_buffer + ((SCR_WIDTH * (y / 8)) + x);
   }
   for (unsigned char i = 0; i < (height * 2); i++) {
     *p_buf = *p_sprite_data;
     p_buf += SCR_WIDTH;   // Переход на следующую строку (внутри столбца)
     p_sprite_data += width;
+  }
+  for (unsigned char i = 0; i < (height / 4) + 1; i++) {
+    *p_attr_buf = *p_attr_data;
+    p_attr_buf += SCR_WIDTH;   // Переход на следующую строку (внутри столбца)
+    p_attr_data += width;
   }
 
   if (y > old_y) {
