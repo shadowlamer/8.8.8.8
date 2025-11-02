@@ -104,7 +104,6 @@ void copy_pix_buf() {
 void draw_wall_sprite(unsigned char x, unsigned char height, unsigned char old_height) {
   unsigned char y, old_y;
   char *p_buf;
-  char *p_attr_buf;
   unsigned char width;
   const t_sprite *p_sprite_descriptor;
   const char *p_sprite_data;
@@ -112,15 +111,15 @@ void draw_wall_sprite(unsigned char x, unsigned char height, unsigned char old_h
   
   // Выбор текстуры в зависимости от высоты стены
   if (height <= 4) {
-    p_sprite_descriptor = &sp_corn_mature_0;  // 8 пикселей
+    p_sprite_descriptor = &corn_mature_0;  // 8 пикселей
   } else if (height <= 8) {
-    p_sprite_descriptor = &sp_corn_mature_1;  // 16
+    p_sprite_descriptor = &corn_mature_1;  // 16
   } else if (height <= 16) {
-    p_sprite_descriptor = &sp_corn_mature_2;  // 32Local (1)
+    p_sprite_descriptor = &corn_mature_2;  // 32Local (1)
   } else if (height <= 32) {
-    p_sprite_descriptor = &sp_corn_mature_3;  // 64
+    p_sprite_descriptor = &corn_mature_3;  // 64
   } else {
-    p_sprite_descriptor = &sp_corn_mature_4;  // Полная 128-пиксельная текстура
+    p_sprite_descriptor = &corn_mature_4;  // Полная 128-пиксельная текстура
   }
 
   width = p_sprite_descriptor->width;
@@ -139,24 +138,17 @@ void draw_wall_sprite(unsigned char x, unsigned char height, unsigned char old_h
   
   if (y > old_y) {
     p_buf = pix_buffer + ((SCR_WIDTH * old_y) + x);
-    p_attr_buf = pix_attr_buffer + ((SCR_WIDTH * (old_y / 8)) + x);
     for (unsigned char i = 0; i < (y - old_y); i++) {
       *p_buf = 0x00;
       p_buf += SCR_WIDTH;   // Переход на следующую строку (внутри столбца)
     }
   } else {
     p_buf = pix_buffer + ((SCR_WIDTH * y) + x);
-    p_attr_buf = pix_attr_buffer + ((SCR_WIDTH * (y / 8)) + x);
   }
   for (unsigned char i = 0; i < (height * 2); i++) {
     *p_buf = *p_sprite_data;
     p_buf += SCR_WIDTH;   // Переход на следующую строку (внутри столбца)
     p_sprite_data += width;
-  }
-  for (unsigned char i = 0; i < (height / 4) + 1; i++) {
-    *p_attr_buf = *p_attr_data;
-    p_attr_buf += SCR_WIDTH;   // Переход на следующую строку (внутри столбца)
-    p_attr_data += width;
   }
 
   if (y > old_y) {
