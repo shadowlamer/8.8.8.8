@@ -19,9 +19,8 @@ void engine_init() {
   // Предвычисление таблицы высот в зависимости от дистанции
   calc_distance_deltas();
 
-  // Очистка буфера: верх — чёрный (0x00), низ — белый (0xFF) → имитация пола и потолка
-  memset(pix_buffer, 0x00, PIX_BUFFER_SIZE / 2);               // Верх: 0–63 строки
-  memset(pix_buffer + PIX_BUFFER_SIZE / 2, 0xff, PIX_BUFFER_SIZE / 2); // Низ: 64–127 строки
+  // Очистка буфера
+  memset(pix_buffer, 0x00, PIX_BUFFER_SIZE);               // Верх: 0–63 строки
 }
 
 
@@ -33,7 +32,8 @@ void engine_render(int player_x, int player_y, int player_angle) {
   unsigned char wall_chunk_size;
   unsigned char wall_height_delta;
 
-  memset(attr_buf, 0x04, ATTR_SCREEN_BUFFER_SIZE);               // Верх: 0–63 строки
+  memset(attr_buf, 0b00001100, ATTR_SCREEN_BUFFER_SIZE / 3);           // Верх: 0–63 строки
+  memset(attr_buf + 0x100, 0b00000100, ATTR_SCREEN_BUFFER_SIZE / 3);           // Верх: 0–63 строки
   
   for (unsigned char col = 0; col < SCR_WIDTH; col++) {
       wall_height_buffer[col] = trace_ray(col, player_x, player_y, player_angle);
@@ -153,7 +153,7 @@ void draw_wall_sprite(unsigned char x, unsigned char height, unsigned char old_h
 
   if (y > old_y) {
     for (unsigned char i = 0; i < (y - old_y); i++) {
-      *p_buf = 0xff;
+      *p_buf = 0x00;
       p_buf += SCR_WIDTH;   // Переход на следующую строку (внутри столбца)
     }
   }
