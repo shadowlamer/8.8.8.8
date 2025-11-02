@@ -1,0 +1,40 @@
+{
+  "memory_dump": "sprites.scr",
+  "sprites": [
+    {
+      "name": "corn_mature_4",
+      "x_char": 0,
+      "y_char": 0,
+      "width_chars": 3,
+      "height_chars": 16
+    },
+    {
+      "name": "corn_mature_3",
+      "x_char": 3,
+      "y_char": 6,
+      "width_chars": 2,
+      "height_chars": 10
+    },
+    {
+      "name": "corn_mature_2",
+      "x_char": 5,
+      "y_char": 10,
+      "width_chars": 1,
+      "height_chars": 6
+    },
+    {
+      "name": "corn_mature_1",
+      "x_char": 6,
+      "y_char": 13,
+      "width_chars": 1,
+      "height_chars": 3
+    },
+    {
+      "name": "corn_mature_0",
+      "x_char": 7,
+      "y_char": 15,
+      "width_chars": 1,
+      "height_chars": 1
+    }
+  ]
+}
