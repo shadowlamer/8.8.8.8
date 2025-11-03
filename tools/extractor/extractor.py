@@ -37,21 +37,24 @@ screen_addrs = [
 
 def pixel_addr(x, y):
     if not (0 <= x < SCREEN_WIDTH_CHARS and 0 <= y < SCREEN_HEIGHT_CHARS * 8):
-        raise ValueError(f"Invalid pixel coords: ({x}, {y})")
+        raise ValueError(f"Invalid char coords: ({x}, {y})")
     return screen_addrs[y] + x
 
 def attr_addr(x_char, y_char):
     return ATTR_BASE + y_char * SCREEN_WIDTH_CHARS + x_char
 
 def extract_sprite_pixels(mem, x_char, y_char, w_chars, h_chars):
+    """Извлекает пиксельные данные спрайта как байты."""
     data = bytearray()
     for dy in range(y_char * 8, (y_char + h_chars) * 8):
         for dx in range(x_char, x_char + w_chars):
             addr = pixel_addr(dx, dy)
+            # Каждое знакоместо — 8 байт (по одному на строку)
             data.append(mem[addr])
     return bytes(data)
 
 def extract_sprite_attrs(mem, x_char, y_char, w_chars, h_chars):
+    """Извлекает атрибуты (цвета) как байты, по одному на знакоместо."""
     data = bytearray()
     for dy in range(y_char, y_char + h_chars):
         for dx in range(x_char, x_char + w_chars):
@@ -59,17 +62,16 @@ def extract_sprite_attrs(mem, x_char, y_char, w_chars, h_chars):
             data.append(mem[addr])
     return bytes(data)
 
-def c_array_literal(data, name, const=True, preamble=""):
+def c_array_literal(data, name, const=True):
     prefix = "const " if const else ""
     lines = []
-    start = f"{prefix}unsigned char {name}[] = {{"
-    if preamble:
-        start += preamble
-    lines.append(start)
+    lines.append(f"{prefix}unsigned char {name}[] = {{")
+    # Разбиваем по 16 байт в строку
     for i in range(0, len(data), 16):
         chunk = data[i:i+16]
         hex_str = ", ".join(f"0x{b:02X}" for b in chunk)
         lines.append(f"    {hex_str},")
+    # Убираем последнюю запятую
     if lines[-1].endswith(","):
         lines[-1] = lines[-1][:-1]
     lines.append("};")
@@ -92,14 +94,17 @@ def generate_header(sprites_info, output_h, include_attributes):
         for info in sprites_info:
             name = info["name"]
             pixels = info["pixels"]
-            attrs = info["attrs"] if include_attributes else None
+            attrs = info["attrs"]
             w = info["width"]
             h = info["height"]
 
-            # Пиксельные данные — всегда генерируем
-            f.write(c_array_literal(pixels, f"{name}_sprite_data", preamble=f"/*{{w:{w*8},h:{h*8}}}*/") + "\n\n")
+            # Генерируем массивы
+            pixel_preamble = f"/*{{w:{w*8},h:{h*8},bpp:1,brev:1}}*/"
+            pixel_lines = c_array_literal(pixels, f"{name}_sprite_data").split('\n')
+            pixel_lines[0] = pixel_lines[0][:-1] + pixel_preamble  # заменяем "{" на "{/*...*/"
+            pixel_lines[0] += "{"
+            f.write('\n'.join(pixel_lines) + "\n\n")
 
-            # Атрибуты — опционально
             if include_attributes:
                 f.write(c_array_literal(attrs, f"{name}_attr_data") + "\n\n")
 
@@ -116,6 +121,7 @@ def generate_header(sprites_info, output_h, include_attributes):
 
             all_decls.append(name)
 
+        # Опционально: массив всех спрайтов
         if all_decls:
             f.write("static const t_sprite * const all_sprites[] = {\n")
             for name in all_decls:
@@ -141,7 +147,7 @@ def main():
         print(f"Error: memory dump file '{mem_file}' not found.")
         sys.exit(1)
 
-    # Новый параметр: include_attributes (по умолчанию True)
+    # Новый флаг: включать ли атрибуты (по умолчанию — да)
     include_attributes = manifest.get("include_attributes", True)
 
     with open(mem_file, "rb") as f:
@@ -160,7 +166,7 @@ def main():
             print(f"Warning: sprite '{name}' exceeds screen bounds.")
 
         pixels = extract_sprite_pixels(mem, x, y, w, h)
-        attrs = extract_sprite_attrs(mem, x, y, w, h) if include_attributes else b""
+        attrs = extract_sprite_attrs(mem, x, y, w, h)
 
         sprites_info.append({
             "name": name,
@@ -171,8 +177,8 @@ def main():
         })
 
     generate_header(sprites_info, output_h, include_attributes)
-    attr_note = "with" if include_attributes else "without"
-    print(f"✅ Generated {output_h} {attr_note} attributes ({len(sprites_info)} sprites).")
+    attr_state = "with" if include_attributes else "without"
+    print(f"✅ Generated {output_h} {attr_state} attributes ({len(sprites_info)} sprites).")
 
 if __name__ == "__main__":
     main()
