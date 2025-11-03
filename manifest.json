@@ -1,5 +1,6 @@
 {
   "memory_dump": "assets/sprites.scr",
+  "include_attributes": false,
   "sprites": [
     {
       "name": "corn_mature_4",
